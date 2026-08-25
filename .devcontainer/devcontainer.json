@@ -1,1 +1,30 @@
+{
+  "name": "My Linux PC",
 
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "password": "vscode",
+      "webPort": "6080"
+    }
+  },
+
+  "forwardPorts": [
+    6080
+  ],
+
+  "portsAttributes": {
+    "6080": {
+      "label": "Linux Desktop"
+    }
+  },
+
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "32gb"
+  },
+
+  "runArgs": [
+    "--shm-size=1g"
+  ]
+}
