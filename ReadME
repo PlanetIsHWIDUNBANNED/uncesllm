@@ -1,0 +1,561 @@
+If desktop-init.sh says “No such file”
+
+Then Desktop Lite never got installed during the rebuild.
+
+
+
+Replace your .devcontainer/devcontainer.json with this exact config:
+
+
+
+{
+  "name": "My Linux PC",
+
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1.2.10": {
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  },
+
+  "forwardPorts": [
+    6080
+  ],
+
+  "portsAttributes": {
+    "6080": {
+      "label": "Linux Desktop"
+    }
+  },
+
+  "runArgs": [
+    "--init",
+    "--shm-size=1g"
+  ]
+}
+
+desktop-lite 1.2.10 is the current published version, and the feature officially supports current Debian/Ubuntu-based containers. 
+
+
+
+Then:
+
+
+
+Ctrl + Shift + P
+
+
+
+search:
+
+
+
+Codespaces: Rebuild Container
+
+Choose:
+
+
+
+Full Rebuild
+
+When it comes back, immediately run:
+
+
+
+ls -l /usr/local/share/desktop-init.sh
+
+and:
+
+
+
+ss -lnt | grep -E "6080|5901"
+
+If the script exists but still refuses to start
+
+Run:
+
+
+
+cat /tmp/desktop.log
+
+Paste that output to me. That log should tell us the exact failure, instead of us having to guess whether it's TigerVNC, Fluxbox, noVNC, permissions, or something else.
+
+
+
+Right now, though, we're actually close — your GitHub Codespace itself is working; only the graphical desktop service failed to launch.
+
+
+
+4. Your Linux PC should now open
+
+At first you'll see something that looks like VS Code in your browser.
+
+
+
+That's normal.
+
+
+
+The actual remote Linux machine is underneath it.
+
+
+
+Open the terminal in Codespaces with:
+
+
+
+Ctrl + `
+
+or use:
+
+
+
+☰ → Terminal → New Terminal
+
+
+
+Run:
+
+
+
+uname -a
+
+and:
+
+
+
+cat /etc/os-release
+
+You should see your Linux information.
+
+5. Open the graphical desktop
+
+In Codespaces find the PORTS tab.
+
+
+
+Look for:
+
+
+
+6080    Linux Desktop
+
+Click the globe/open-browser button next to it.
+
+
+
+You'll get the noVNC page.
+
+
+
+Press:
+
+
+
+Connect
+
+
+
+Password:
+
+
+
+vscode
+
+Now you should be inside a lightweight Fluxbox Linux desktop. GitHub's desktop-lite documentation confirms port 6080 is the browser desktop and vscode is its default password. 
+
+Important Xbox warning
+
+This is still noVNC, so the cursor issue you had with DistroSea might happen again.
+
+
+
+If it does, LM Studio will still work. You can do basically everything through the regular Codespaces terminal, which should be much easier on Xbox Edge than streaming an entire desktop.
+
+
+
+For what you're doing with the LLM, I recommend using the terminal rather than keeping the Linux desktop open.
+
+6. Add a few normal PC programs
+
+In the Codespaces terminal:
+
+
+
+sudo apt update
+
+Then:
+
+
+
+sudo apt install -y xterm pcmanfm htop nano wget curl unzip
+
+That gives you things such as:
+
+
+
+xterm      terminal window
+pcmanfm    graphical file manager
+htop       task manager
+nano       text editor
+wget       downloader
+curl       web/download utility
+unzip      ZIP files
+
+You can launch the graphical file manager with:
+
+
+
+pcmanfm &
+
+It should appear on your Fluxbox desktop.
+
+7. Install LM Studio's headless version
+
+Do this in the normal Codespaces terminal.
+
+
+
+Run:
+
+
+
+curl -fsSL https://lmstudio.ai/install.sh | bash
+
+This is LM Studio's official Linux installation command for llmster, its headless daemon. llmster is specifically designed for Linux servers/cloud machines where running the normal LM Studio GUI isn't practical. 
+
+
+
+When it finishes, run:
+
+
+
+lms --help
+
+If the command isn't found immediately, run:
+
+
+
+exec bash
+
+then:
+
+
+
+lms --help
+
+You should see commands including:
+
+
+
+lms get
+lms load
+lms chat
+lms ls
+lms ps
+lms server
+
+
+
+8. Check your free disk space BEFORE downloading
+
+Run:
+
+
+
+df -h
+
+Look for the / filesystem.
+
+
+
+You want comfortably more than:
+
+
+
+~6 GB free
+
+I'd prefer:
+
+
+
+10+ GB free
+
+because your model is 4.66 GB and LM Studio needs additional storage.
+
+9. Download Dolphin 3.0
+
+This is the model you picked:
+
+
+
+Dolphin 3.0
+Llama 3.1
+8B
+GGUF
+Q4_0
+
+The Q4_0 file is currently 4.66 GB. 
+
+
+
+Start with:
+
+
+
+lms get Dolphin3.0-Llama3.1-8B --gguf --always-show-all-results --always-show-download-options
+
+LM Studio allows you to search from the CLI and choose a specific GGUF quantization. 
+
+
+
+When it gives you choices, find:
+
+
+
+dphn/Dolphin3.0-Llama3.1-8B-GGUF
+
+Then select:
+
+
+
+Q4_0
+
+You want approximately:
+
+
+
+4.66 GB
+
+Don't accidentally choose:
+
+
+
+Q8_0    8.54 GB
+F16     16.1 GB
+
+Those are considerably larger. 
+
+10. Confirm it downloaded
+
+Run:
+
+
+
+lms ls
+
+You should see Dolphin.
+
+
+
+LM Studio documents lms ls as the command for listing models stored on the machine. 
+
+11. Check how much RAM Dolphin will require
+
+Before loading it, do:
+
+
+
+lms ls
+
+Copy the model key shown for Dolphin.
+
+
+
+Then run:
+
+
+
+lms load --estimate-only MODEL_KEY --context-length 2048 --gpu off
+
+Replace:
+
+
+
+MODEL_KEY
+
+with what lms ls showed.
+
+
+
+For example, it might resemble:
+
+
+
+lms load --estimate-only dphn/Dolphin3.0-Llama3.1-8B-GGUF --context-length 2048 --gpu off
+
+--estimate-only lets LM Studio calculate the expected memory requirement without actually loading the model. 
+
+12. Load Dolphin
+
+Because Codespaces doesn't give us the sort of GPU LM Studio normally benefits from, explicitly use CPU:
+
+
+
+lms load MODEL_KEY --gpu off --context-length 2048 --identifier dolphin
+
+The important settings are:
+
+
+
+--gpu off
+
+and
+
+
+
+--context-length 2048
+
+LM Studio supports both options officially. 
+
+Why only 2048 context?
+
+The model itself supports much larger contexts, but context consumes RAM.
+
+
+
+We're trying to make:
+
+
+
+Dolphin 8B
++
+Codespaces
++
+Linux
++
+LM Studio
+
+fit comfortably inside 16 GB.
+
+
+
+Once you've confirmed it works, you can try:
+
+
+
+lms unload --all
+
+then:
+
+
+
+lms load MODEL_KEY --gpu off --context-length 4096 --identifier dolphin
+
+13. Talk to Dolphin
+
+This is the fun part.
+
+
+
+Run:
+
+
+
+lms chat dolphin
+
+You'll get an interactive prompt directly in the terminal.
+
+
+
+Type something like:
+
+
+
+Hello! Tell me what model you are.
+
+Press Enter.
+
+
+
+If desktop-init.sh says “No such file”
+
+Then Desktop Lite never got installed during the rebuild.
+
+
+
+Replace your .devcontainer/devcontainer.json with this exact config:
+
+
+
+{
+  "name": "My Linux PC",
+
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1.2.10": {
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  },
+
+  "forwardPorts": [
+    6080
+  ],
+
+  "portsAttributes": {
+    "6080": {
+      "label": "Linux Desktop"
+    }
+  },
+
+  "runArgs": [
+    "--init",
+    "--shm-size=1g"
+  ]
+}
+
+desktop-lite 1.2.10 is the current published version, and the feature officially supports current Debian/Ubuntu-based containers. 
+
+
+
+Then:
+
+
+
+Ctrl + Shift + P
+
+
+
+search:
+
+
+
+Codespaces: Rebuild Container
+
+Choose:
+
+
+
+Full Rebuild
+
+When it comes back, immediately run:
+
+
+
+ls -l /usr/local/share/desktop-init.sh
+
+and:
+
+
+
+ss -lnt | grep -E "6080|5901"
+
+If the script exists but still refuses to start
+
+Run:
+
+
+
+cat /tmp/desktop.log
+
+Paste that output to me. That log should tell us the exact failure, instead of us having to guess whether it's TigerVNC, Fluxbox, noVNC, permissions, or something else.
+
+
+
+Right now, though, we're actually close — your GitHub Codespace itself is working; only the graphical desktop service failed to launch.
