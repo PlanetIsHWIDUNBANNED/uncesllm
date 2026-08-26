@@ -559,3 +559,89 @@ Paste that output to me. That log should tell us the exact failure, instead of u
 
 
 Right now, though, we're actually close — your GitHub Codespace itself is working; only the graphical desktop service failed to launch.
+
+move it with:
+
+mkdir -p .devcontainer
+mv devcontainer.json .devcontainer/devcontainer.json
+
+Then verify:
+
+cat .devcontainer/devcontainer.json
+
+It should contain your Desktop Lite setup, something like:
+
+{
+  "name": "Linux Desktop",
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1.2.10": {
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  },
+
+  "forwardPorts": [6080],
+
+  "portsAttributes": {
+    "6080": {
+      "label": "Linux Desktop"
+    }
+  },
+
+  "runArgs": [
+    "--shm-size=1g"
+  ]
+}
+
+Then save it to GitHub:
+
+git add .devcontainer/devcontainer.json
+git rm devcontainer.json 2>/dev/null || true
+git commit -m "Fix devcontainer location"
+git push
+
+If git commit says:
+
+nothing to commit
+
+that's okay as long as:
+
+find . -maxdepth 3 -name "devcontainer.json" -print
+
+shows:
+
+./.devcontainer/devcontainer.json
+Then rebuild
+
+Press:
+
+Ctrl + Shift + P
+
+Search:
+
+Codespaces: Rebuild Container
+
+I'd use Full Rebuild this time because we want to completely replace that big Universal image with the lighter Ubuntu Jammy configuration.
+
+During the new build, look for:
+
+desktop-lite
+
+and:
+
+mcr.microsoft.com/devcontainers/base:jammy
+
+If you see those two things, we've finally got the right build.
+
+And after it finishes, this should finally return actual processes:
+
+ps aux | grep -E "novnc|websockify|Xtigervnc|fluxbox"
+
+and:
+
+ss -lnt | grep -E "6080|5901"
+
+Then port 6080 should appear automatically.
